@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KOSPI200 파생상품 실시간 대시보드 - 선물·옵션 시장 방향성 분석. 투자자별 매매동향, OI 분석, Max Pain, 시나리오 신호를 한눈에.">
+  <meta property="og:title" content="KRX 파생 대시보드 | KOSPI200 선물·옵션">
+  <meta property="og:description" content="실시간 파생상품 데이터 분석 대시보드">
+  <title>KRX 파생 대시보드 | KOSPI200 선물·옵션 분석</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-icon">📊</div>
+      <div>
+        <h1>KRX 파생 대시보드</h1>
+        <span>KOSPI200 선물·옵션 분석</span>
+      </div>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <!-- KOSPI200 -->
+    <div class="header-price-block">
+      <span class="header-label">KOSPI200</span>
+      <span class="header-price" id="header-kospi">---.--</span>
+      <span class="header-change" id="header-kospi-change">--</span>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <!-- 선물 -->
+    <div class="header-price-block">
+      <span class="header-label">선물 (F2609)</span>
+      <span class="header-price" id="header-futures">---.--</span>
+      <span class="header-change" id="header-futures-change">--</span>
+    </div>
+
+    <div class="header-divider"></div>
+
+    <!-- 베이시스 -->
+    <div class="header-price-block">
+      <span class="header-label">베이시스</span>
+      <span id="header-basis" class="header-change">--</span>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <div class="header-right">
+      <div class="market-status">
+        <div class="market-status-dot"></div>
+        <span id="market-status-text">--</span>
+      </div>
+      <div class="live-clock" id="live-clock">--:--:--</div>
+      <button class="refresh-btn" id="refresh-btn">
+        <span class="refresh-icon">↻</span>
+        새로고침
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== ROLLOVER BANNER ===== -->
+  <div style="padding: 0 24px; max-width: 1800px; margin: 12px auto 0;">
+    <div class="rollover-banner hidden" id="rollover-banner">
+      <span>🔄</span>
+      <span class="rollover-text">롤오버 기간 중 - 만기 수급 왜곡 주의</span>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="container">
+    <div class="dashboard-grid">
+
+      <!-- ===== ROW 1: 선물 현황 + 신호 + 만기 ===== -->
+      <div class="row row-3">
+
+        <!-- 선물 현황 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📈</span> 선물 현황</div>
+            <span class="card-badge badge-blue">실시간</span>
+          </div>
+
+          <!-- KPI 카드 2x2 -->
+          <div class="kpi-grid">
+            <div class="kpi-card neutral" id="kpi-futures">
+              <div class="kpi-label">선물 현재가</div>
+              <div class="kpi-value">---</div>
+              <div class="kpi-sub">전일 ---</div>
+              <div class="kpi-change">---</div>
+            </div>
+            <div class="kpi-card neutral" id="kpi-oi">
+              <div class="kpi-label">미결제약정 (OI)</div>
+              <div class="kpi-value">---</div>
+              <div class="kpi-sub">전일대비 OI</div>
+              <div class="kpi-change">---</div>
+            </div>
+            <div class="kpi-card neutral" id="kpi-basis">
+              <div class="kpi-label">시장 베이시스</div>
+              <div class="kpi-value">---</div>
+              <div class="kpi-sub">이론 베이시스</div>
+              <div class="kpi-change">---</div>
+            </div>
+            <div class="kpi-card neutral" id="kpi-volume">
+              <div class="kpi-label">거래량</div>
+              <div class="kpi-value">---</div>
+              <div class="kpi-sub">전일대비</div>
+              <div class="kpi-change">---</div>
+            </div>
+          </div>
+
+          <!-- 선물 월물 체인 -->
+          <div class="card-header" style="margin-top:4px; margin-bottom:10px;">
+            <div class="card-title" style="font-size:10px;">📅 월물별 현재가</div>
+          </div>
+          <div class="futures-chain" id="futures-chain">
+            <div class="futures-month"><div class="skeleton" style="height:60px"></div></div>
+            <div class="futures-month"><div class="skeleton" style="height:60px"></div></div>
+            <div class="futures-month"><div class="skeleton" style="height:60px"></div></div>
+          </div>
+        </div>
+
+        <!-- 조합 신호 판단 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🎯</span> 방향성 신호 판단</div>
+            <span class="card-badge badge-yellow">PDF 기반</span>
+          </div>
+
+          <div class="signal-display">
+            <!-- 메인 신호 -->
+            <div class="signal-main bull" id="signal-main">
+              <div class="signal-icon">📈</div>
+              <div class="signal-text">
+                <h3>분석 중...</h3>
+                <p>데이터 로딩 중입니다</p>
+              </div>
+            </div>
+
+            <!-- 3개 인디케이터 -->
+            <div class="signal-indicators">
+              <div class="signal-indicator">
+                <div class="ind-label">가격 방향</div>
+                <div class="ind-value up" id="ind-price">↑</div>
+              </div>
+              <div class="signal-indicator">
+                <div class="ind-label">외국인 선물</div>
+                <div class="ind-value up" id="ind-foreigner">매수</div>
+              </div>
+              <div class="signal-indicator">
+                <div class="ind-label">OI 변화</div>
+                <div class="ind-value down" id="ind-oi">↓</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 8가지 시나리오 -->
+          <div class="card-header" style="margin-top:14px; margin-bottom:10px;">
+            <div class="card-title" style="font-size:10px;">🔢 8가지 시나리오 (가격×외국인×OI)</div>
+          </div>
+          <div class="combo-signal-grid" id="scenarios-grid">
+            <!-- JS로 동적 생성 -->
+          </div>
+        </div>
+
+        <!-- 만기 캘린더 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📅</span> 만기 일정</div>
+            <span class="card-badge badge-purple">2026</span>
+          </div>
+
+          <!-- 카운트다운 -->
+          <div class="expiry-countdown">
+            <div class="countdown-days" id="countdown-days">--</div>
+            <div class="countdown-label" id="countdown-label">다음 만기까지</div>
+            <div class="expiry-date" id="countdown-date">---</div>
+            <div id="expiry-type-badge" class="expiry-type-badge badge-blue">옵션 만기</div>
+          </div>
+
+          <!-- 만기 리스트 -->
+          <div class="expiry-list" id="expiry-list">
+            <div class="expiry-item"><span class="skeleton" style="width:100%;height:20px;display:block"></span></div>
+            <div class="expiry-item"><span class="skeleton" style="width:100%;height:20px;display:block"></span></div>
+            <div class="expiry-item"><span class="skeleton" style="width:100%;height:20px;display:block"></span></div>
+          </div>
+        </div>
+
+      </div><!-- /row-3 -->
+
+      <!-- ===== ROW 2: 투자자별 매매동향 ===== -->
+      <div class="row row-2">
+
+        <!-- 투자자별 매매동향 테이블 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">👥</span> 투자자별 매매동향</div>
+            <span class="card-badge badge-blue">누적 (억원)</span>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="investor-table">
+              <thead>
+                <tr>
+                  <th>투자자</th>
+                  <th>코스피</th>
+                  <th>코스닥</th>
+                  <th>선물 ★</th>
+                  <th>콜옵션</th>
+                  <th>풋옵션</th>
+                </tr>
+              </thead>
+              <tbody id="investor-tbody">
+                <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px">로딩 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px; font-size:10px; color:var(--text-muted); padding: 0 2px;">
+            ★ 선물 순매수가 방향성 핵심 지표 | 외국인 선물+OI+비차익을 함께 확인
+          </div>
+        </div>
+
+        <!-- 투자자별 선물 차트 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📊</span> 투자자별 선물 포지션</div>
+            <span class="card-badge badge-blue">억원 기준</span>
+          </div>
+          <div class="chart-container" style="height:200px">
+            <canvas id="investor-chart"></canvas>
+          </div>
+        </div>
+
+      </div><!-- /row-2 -->
+
+      <!-- ===== ROW 3: 프로그램매매 + 비차익 ===== -->
+      <div class="row row-3-2">
+
+        <!-- 프로그램매매 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🤖</span> 프로그램매매 (차익/비차익)</div>
+            <span class="card-badge badge-yellow">비차익이 핵심</span>
+          </div>
+
+          <!-- 미니 바 -->
+          <div style="margin-bottom:16px;">
+            <div class="mini-bar-row">
+              <span class="mini-bar-label">차익매매</span>
+              <div class="mini-bar-track">
+                <div class="mini-bar-fill down" id="bar-arb" style="width:20%"></div>
+              </div>
+              <span class="mini-bar-value val-neg" id="bar-arb-val">---억</span>
+            </div>
+            <div class="mini-bar-row">
+              <span class="mini-bar-label" style="color:var(--neutral);font-weight:700">비차익★</span>
+              <div class="mini-bar-track">
+                <div class="mini-bar-fill down" id="bar-nonarb" style="width:80%"></div>
+              </div>
+              <span class="mini-bar-value val-neg" id="bar-nonarb-val">---억</span>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto; margin-bottom:14px;">
+            <table class="program-table">
+              <thead>
+                <tr>
+                  <th>구분</th>
+                  <th>매수(억)</th>
+                  <th>매도(억)</th>
+                  <th>순매수(억)</th>
+                </tr>
+              </thead>
+              <tbody id="program-tbody">
+                <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px">로딩 중...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="font-size:10px;color:var(--text-muted);padding:0 2px;line-height:1.6;">
+            💡 선물↑ + OI↑ + 비차익매수 = 강한 상승 / 선물↑ + OI↓ + 비차익매도 = 숏커버 (신뢰도 낮음)
+          </div>
+        </div>
+
+        <!-- 프로그램매매 차트 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">📉</span> 프로그램매매 현황</div>
+          </div>
+          <div class="chart-container" style="height:180px;">
+            <canvas id="program-chart"></canvas>
+          </div>
+        </div>
+
+      </div><!-- /row-3-2 -->
+
+      <!-- ===== ROW 4: Max Pain + 옵션 OI ===== -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🔥</span> 행사가별 OI 분포 &amp; Max Pain</div>
+          <span class="card-badge badge-yellow">만기 1주 내 영향력 강화</span>
+        </div>
+
+        <!-- Max Pain 정보 -->
+        <div class="maxpain-info">
+          <div>
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">Max Pain 가격</div>
+            <div class="maxpain-price" id="maxpain-price">---</div>
+          </div>
+          <div class="maxpain-labels">
+            <h4>옵션 매도자 손실 최소 구간</h4>
+            <p>만기 임박 시 이 가격으로 수렴하는 경향. 콜 OI 상위 = 상방 저항, 풋 OI 상위 = 하방 지지</p>
+          </div>
+        </div>
+
+        <!-- 지지/저항 -->
+        <div class="support-resist-row" style="margin-bottom:14px">
+          <div class="sr-item resist">
+            <div class="sr-label">🔴 상방 저항 (콜 OI 집중)</div>
+            <div class="sr-price" id="resist-price">---</div>
+            <div class="sr-desc">콜 매도 포지션 집중 구간</div>
+          </div>
+          <div class="sr-item support">
+            <div class="sr-label">🟢 하방 지지 (풋 OI 집중)</div>
+            <div class="sr-price" id="support-price">---</div>
+            <div class="sr-desc">풋 매도 포지션 집중 구간</div>
+          </div>
+        </div>
+
+        <!-- 차트 -->
+        <div class="chart-container chart-container-lg" style="height:280px;">
+          <canvas id="option-oi-chart"></canvas>
+        </div>
+
+        <div style="margin-top:10px;font-size:10px;color:var(--text-muted)">
+          🟡 Max Pain 행사가 | 🔵 현재 KOSPI200 지수 근접 행사가 | 🔴 콜 OI(저항) | 🟢 풋 OI(지지)
+        </div>
+      </div>
+
+      <!-- ===== ROW 5: 투자자별 만기손익 ===== -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">💰</span> 투자자별 만기 손익 분기점</div>
+          <span class="card-badge badge-purple">HTS [0791] 기반</span>
+        </div>
+
+        <div class="row row-2" style="gap:16px">
+          <!-- 테이블 -->
+          <div>
+            <div style="overflow-x:auto;">
+              <table class="pnl-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left;padding-left:12px">투자자</th>
+                    <th>손익분기점</th>
+                    <th>현재와 차이</th>
+                    <th style="min-width:80px">비중</th>
+                    <th>선물순매수</th>
+                    <th>방향</th>
+                  </tr>
+                </thead>
+                <tbody id="pnl-tbody">
+                  <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:20px">로딩 중...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top:12px;font-size:10px;color:var(--text-muted);line-height:1.7;">
+              💡 손익분기점보다 지수가 <strong style="color:var(--up)">위</strong>면 해당 투자자에게 유리 (상방)<br>
+              💡 지수가 <strong style="color:var(--down)">아래</strong>면 해당 투자자 손실 구간
+            </div>
+          </div>
+
+          <!-- P&L 차트 -->
+          <div>
+            <div class="chart-container" style="height:200px;">
+              <canvas id="pnl-chart"></canvas>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--text-muted)">
+              X축: KOSPI200 지수 수준 | Y축: 추정 손익 (단순화)
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard-grid -->
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer-left">
+      <div id="last-updated">마지막 업데이트: --:--:--</div>
+      <div style="margin-top:4px">⚠️ 본 대시보드는 투자 참고용입니다. 실제 투자 판단은 본인 책임 하에 결정하세요.</div>
+    </div>
+    <div class="footer-right">
+      <div class="data-source-tag">📡 KRX Open API</div>
+      <div class="data-source-tag">🔄 30초 자동갱신</div>
+      <div class="data-source-tag">🤝 키움증권 OpenAPI (준비중)</div>
+    </div>
+  </footer>
+
+  <!-- ===== JS (ES Modules) ===== -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
