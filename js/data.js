@@ -5,7 +5,7 @@
  */
 
 // ===== API 설정 =====
-// Render.com 백엔드 URL (배포 후 실제 URL로 교체)
+// Render.com 백엔드 URL ✅ 배포 완료
 const BACKEND_URL = 'https://krx-dashboard-api.onrender.com';
 const USE_MOCK = false; // false = 백엔드 우선, 실패 시 Mock 자동 전환
 
