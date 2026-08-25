@@ -1,0 +1,10 @@
+# 불필요 파일 제외
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.env
+
+# 임시 파일
+tables_output.txt
+output.txt
