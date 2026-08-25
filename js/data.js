@@ -4,9 +4,10 @@
  * Phase 2: KRX Open API 연동 (data.krx.co.kr)
  */
 
-// ===== KRX API 설정 =====
-const KRX_API_BASE = 'https://data.krx.co.kr/comm/bldAttendant/getJsonData.cmd';
-const USE_MOCK = true; // Phase 1: true, Phase 2: false
+// ===== API 설정 =====
+// Render.com 백엔드 URL (배포 후 실제 URL로 교체)
+const BACKEND_URL = 'https://krx-dashboard-api.onrender.com';
+const USE_MOCK = false; // false = 백엔드 우선, 실패 시 Mock 자동 전환
 
 // ===== 2026년 만기일 데이터 (PDF p.5 기준) =====
 export const EXPIRY_DATES = [
@@ -255,21 +256,29 @@ async function fetchKrxFuturesData() {
 // ===== 메인 데이터 조회 함수 =====
 export async function fetchDashboardData() {
   if (USE_MOCK) {
-    // 약간의 딜레이로 실제 API처럼 느껴지게
     await new Promise(r => setTimeout(r, 300));
     return generateMockData();
   }
 
-  // Phase 2: 실제 API
-  const [krxData] = await Promise.allSettled([
-    fetchKrxFuturesData(),
-  ]);
+  // 백엔드 API 호출 (Render.com), 실패 시 Mock으로 자동 폴백
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
-  // API 실패 시 Mock으로 폴백
-  if (!krxData.value) return generateMockData();
+    const res = await fetch(`${BACKEND_URL}/api/dashboard`, {
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' },
+    });
+    clearTimeout(timeout);
 
-  // TODO: KRX 데이터 파싱 및 변환
-  return generateMockData();
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const data = await res.json();
+    console.log('✅ 백엔드 API 수신:', data.source || 'live');
+    return data;
+  } catch (e) {
+    console.warn('⚠️ 백엔드 실패, Mock 사용:', e.message);
+    return generateMockData();
+  }
 }
 
 // ===== 유틸리티 =====
